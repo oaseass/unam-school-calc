@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>운암중 고교 거리 계산기</title>
+<meta name="description" content="운암중학교 학생이 배정받을 수 있는 광주 평준화 일반고까지, 우리 집 주소 기준 거리와 이동시간을 계산해 줍니다.">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;800&display=swap">
+<style>
+:root{--bg:#f3f5fa;--card:#fff;--ink:#14192b;--mute:#64708a;--line:#e5e9f2;--soft:#f6f8fd;--brand:#4f46e5;--brandink:#fff;--girl:#db2777;--girlbg:#fde8f1;--boy:#0f766e;--boybg:#d9f4ef;--coed:#2563eb;--coedbg:#e3edff;--ok:#059669;--okbg:#dcf7ec;--warn:#c2570c;--warnbg:#fff0dc;--bad:#dc2626;--bar:#e3e7f3;--shadow:0 1px 2px rgba(20,25,43,.05),0 8px 24px rgba(20,25,43,.06)}
+@media(prefers-color-scheme:dark){:root{--bg:#0e1220;--card:#171c2f;--ink:#eef1fb;--mute:#97a1bd;--line:#262d47;--soft:#1c2238;--brand:#6366f1;--girl:#f472b6;--girlbg:#3a1f31;--boy:#4fd1c0;--boybg:#12332f;--coed:#7db0ff;--coedbg:#1b2a4d;--ok:#4ade9d;--okbg:#10332a;--warn:#fbab5c;--warnbg:#3a2a14;--bad:#f87171;--bar:#262d47;--shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.35);color-scheme:dark}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.65 "Noto Sans KR","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+.hero{background:linear-gradient(135deg,#312e81,#4f46e5 60%,#7c3aed);color:#fff;border-radius:0 0 26px 26px;padding:36px 0 34px}
+.in{max-width:560px;margin:auto;padding-left:max(18px,env(safe-area-inset-left));padding-right:max(18px,env(safe-area-inset-right))}
+.eyebrow{display:inline-block;font-size:12.5px;font-weight:700;background:rgba(255,255,255,.17);padding:4px 12px;border-radius:99px}
+h1{font-size:28px;line-height:1.3;margin:12px 0 8px;font-weight:800;letter-spacing:-.02em}
+.sub{opacity:.9;font-size:15px;margin:0}
+main{max-width:560px;margin:0 auto;padding:18px max(16px,env(safe-area-inset-right)) 70px max(16px,env(safe-area-inset-left))}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:20px;box-shadow:var(--shadow);padding:16px 16px 18px;margin-bottom:14px}
+.panel h2{font-size:16px;margin:0 0 10px;display:flex;align-items:center;gap:8px}
+.step{display:inline-grid;place-items:center;width:24px;height:24px;border-radius:8px;background:var(--brand);color:var(--brandink);font-size:13px;font-weight:800}
+.seg{display:flex;background:var(--soft);border:1px solid var(--line);border-radius:14px;padding:3px;gap:3px}
+.seg button{flex:1;border:0;background:none;color:var(--mute);font:inherit;font-weight:700;font-size:15px;padding:11px 8px;border-radius:11px;cursor:pointer}
+.seg button.on{background:var(--brand);color:var(--brandink)}
+.row{display:flex;gap:8px}
+input[type=text]{flex:1;min-width:0;font:inherit;font-size:16px;padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:var(--soft);color:var(--ink)}
+input[type=text]:focus{outline:2px solid var(--brand);outline-offset:1px}
+.btn{font:inherit;font-weight:700;font-size:15px;border:0;border-radius:12px;padding:12px 16px;background:var(--brand);color:var(--brandink);cursor:pointer;white-space:nowrap}
+.btn.ghost{background:var(--soft);color:var(--ink);border:1px solid var(--line)}
+.btn:disabled{opacity:.55;cursor:default}
+.hint{font-size:13px;color:var(--mute);margin:8px 2px 0;line-height:1.55}
+.msg{font-size:14px;margin:10px 2px 0;padding:10px 12px;border-radius:12px;background:var(--warnbg);color:var(--warn)}
+.cands{display:grid;gap:8px;margin-top:10px}
+.cand{display:block;width:100%;text-align:left;font:inherit;font-size:14px;padding:11px 12px;border:1px solid var(--line);border-radius:12px;background:var(--soft);color:var(--ink);cursor:pointer}
+.cand:hover,.cand.on{border-color:var(--brand);outline:1px solid var(--brand)}
+.chosen{margin-top:10px;font-size:14px;padding:10px 12px;border-radius:12px;background:var(--okbg);color:var(--ok);font-weight:600}
+.chosen a{color:inherit}
+.sum{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
+.sum div{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:10px 8px;text-align:center;box-shadow:var(--shadow)}
+.sum small{display:block;color:var(--mute);font-size:12px}.sum b{display:block;font-size:15px;line-height:1.35;margin-top:2px;overflow-wrap:anywhere}.sum em{font-style:normal;color:var(--brand)}
+.rule{font-size:14px;background:var(--soft);border:1px solid var(--line);border-radius:14px;padding:11px 13px;margin-bottom:14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:20px;box-shadow:var(--shadow);overflow:hidden;margin-bottom:12px}
+.ch{display:flex;gap:12px;align-items:center;padding:14px 14px 10px}
+.rk{flex:none;width:38px;height:38px;border-radius:12px;display:grid;place-items:center;font-weight:800;color:#fff;background:var(--brand)}
+.ct{min-width:0}.ct h3{margin:0;font-size:17px;line-height:1.3;overflow-wrap:anywhere}
+.ct p{margin:1px 0 0;font-size:12.5px;color:var(--mute);overflow-wrap:anywhere}
+.pill{display:inline-block;font-size:11.5px;font-weight:700;padding:1px 8px;border-radius:99px;margin-left:6px;vertical-align:2px}
+.pill.g{background:var(--girlbg);color:var(--girl)}.pill.b{background:var(--boybg);color:var(--boy)}.pill.c{background:var(--coedbg);color:var(--coed)}
+.mets{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line);border-block:1px solid var(--line)}
+.met{background:var(--card);padding:11px 6px;text-align:center}.met small{display:block;color:var(--mute);font-size:12px}.met b{font-size:20px;letter-spacing:-.02em}.met b i{font-style:normal;font-size:12.5px;color:var(--mute);margin-left:1px}
+.w1{color:var(--ok)}.w2{color:var(--warn)}.w3{color:var(--bad)}
+.body{padding:12px 14px 14px;display:grid;gap:10px}
+.jin{font-size:13.5px}.jin .top{display:flex;justify-content:space-between;gap:8px;margin-bottom:4px}
+.prog{height:8px;background:var(--bar);border-radius:99px;overflow:hidden}.prog b{display:block;height:100%;background:linear-gradient(90deg,#10b981,#34d399)}
+.fine{font-size:12.5px;color:var(--mute);line-height:1.5}
+.lnk{display:grid;grid-template-columns:1.4fr 1fr;gap:8px}
+.lnk a{text-align:center;text-decoration:none;font-weight:700;font-size:14px;padding:11px 8px;border-radius:12px;border:1px solid var(--line);color:var(--ink);background:var(--soft)}
+.lnk a.main{background:var(--brand);border-color:var(--brand);color:var(--brandink)}
+details.rv{border:1px solid var(--line);border-radius:12px;padding:0 12px}
+details.rv summary{cursor:pointer;font-weight:700;font-size:14px;padding:10px 0;list-style:none;display:flex;justify-content:space-between}
+details.rv summary::after{content:"＋";color:var(--mute)}details.rv[open] summary::after{content:"－"}
+.tag{display:block;font-size:13.5px;margin:6px 0;padding:8px 10px;border-radius:10px;line-height:1.55}
+.tag.p{background:var(--okbg)}.tag.c{background:var(--warnbg)}
+.foot{font-size:12.5px;color:var(--mute);line-height:1.7;margin-top:22px}
+.foot summary{cursor:pointer;font-weight:700}
+.sk{height:96px;border-radius:20px;background:linear-gradient(90deg,var(--bar),var(--soft),var(--bar));background-size:200% 100%;animation:sh 1.2s infinite;margin-bottom:12px}
+@keyframes sh{to{background-position:-200% 0}}
+@media(prefers-reduced-motion:reduce){.sk{animation:none}}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<header class="hero"><div class="in">
+<span class="eyebrow">2027학년도 후기 평준화 일반고</span>
+<h1>운암중 학생을 위한<br>고교 거리 계산기</h1>
+<p class="sub">우리 집 주소를 입력하면, 배정받을 수 있는 고등학교까지 거리와 이동시간을 계산해 드립니다.</p>
+</div></header>
+<main>
+<section class="panel"><h2><span class="step">1</span>학생 성별</h2>
+<div class="seg" id="sex"><button class="on" data-v="여">여학생</button><button data-v="남">남학생</button></div>
+<p class="hint">성별에 따라 배정받을 수 있는 학교가 다릅니다.</p></section>
+
+<section class="panel"><h2><span class="step">2</span>우리 집 주소</h2>
+<form id="f" class="row"><input id="q" type="text" inputmode="search" autocomplete="off" placeholder="예: 광주 북구 운암로 100" aria-label="우리 집 주소"><button class="btn" id="go" type="submit">검색</button></form>
+<div class="row" style="margin-top:8px"><button class="btn ghost" id="gps" type="button" style="flex:1">현재 위치로 계산</button></div>
+<p class="hint">도로명 주소가 가장 잘 찾아집니다. 번지수는 정확히 못 찾을 수 있어서, 도로 기준 수십 미터 정도 차이가 날 수 있습니다. 입력한 주소는 이 기기에서만 쓰고 저장하지 않습니다.</p>
+<div id="msg" class="msg" hidden></div><div id="cands" class="cands"></div><div id="chosen" class="chosen" hidden></div></section>
+
+<div id="out" hidden>
+<div class="sum" id="sum"></div>
+<div class="rule" id="rule"></div>
+<div id="list"></div>
+</div>
+
+<details class="foot"><summary>이 페이지에 대해</summary>
+<p>배정 학교: 광주시교육청 2027학년도 후기 평준화 일반고 중학교별 배정가능고교(확정본) 기준.<br>
+거리·시간: OpenStreetMap 기반 무료 길찾기(도보·자동차). 자동차 시간은 신호와 혼잡을 감안해 30% 여유를 더했습니다. 실제와 다를 수 있습니다.<br>
+대중교통: 직접 계산하지 않고, 카카오맵 길찾기를 우리 집 위치에서 바로 열어 드립니다. 등교 시간을 넣어 확인하세요.<br>
+진학률: 학교알리미 2025년 공시(4년제 대학 진학 비율). 서울 소재 대학(인서울) 진학자 수는 학교별로 공개된 자료를 찾지 못했습니다. 학교 설명회에서 확인하세요.<br>
+후기: 학부모·학생이 직접 쓴 소수 의견(오늘학교 아카데미)이라 한두 명 생각일 수 있습니다.<br>
+거리 계산을 위해 입력한 위치가 무료 지도 서비스(OpenStreetMap)에 전달됩니다. 이 사이트는 주소를 따로 저장하지 않습니다. 비공식 정보이니 배정과 입시는 교육청·학교 안내를 꼭 확인하세요.</p></details>
+</main>
+<script src="schools.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
