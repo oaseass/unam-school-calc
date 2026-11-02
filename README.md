@@ -4,7 +4,7 @@
 우리 집 주소 기준 거리와 이동시간을 계산해 보는 정적 웹페이지입니다.
 
 - 주소 검색: OpenStreetMap Nominatim (키 불필요)
-- 도보·자동차 거리와 시간: OSRM 공개 서버 (routing.openstreetmap.de)
+- 도보·자동차 거리와 시간: Valhalla 공개 서버 (valhalla1.openstreetmap.de)
 - 대중교통: 카카오맵 길찾기를 우리 집 위치에서 바로 엽니다
 - 진학률: 학교알리미 2025년 공시, 후기: 학부모·학생 소수 의견
 - 입력한 주소는 서버에 저장하지 않습니다

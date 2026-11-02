@@ -2,9 +2,9 @@
   "use strict";
   var S = window.SCHOOLS;
   var $ = function (id) { return document.getElementById(id); };
-  var state = { sex: "여", origin: null, calc: null };
+  var state = { sex: "여", origin: null, calc: null, tok: 0 };
   var NOM = "https://nominatim.openstreetmap.org/search";
-  var OSRM = "https://routing.openstreetmap.de/routed-";
+  var VAL = "https://valhalla1.openstreetmap.de/sources_to_targets";
   var RULE = { "여": { total: 14, pick: 9 }, "남": { total: 17, pick: 10 } };
 
   function msg(t) { var m = $("msg"); m.hidden = !t; m.textContent = t || ""; }
@@ -85,34 +85,52 @@
   }
 
   /* ---------- 거리 계산 ---------- */
-  function table(profile, list) {
+  function matrix(costing, list) {
     var o = state.origin;
-    var coords = [o].concat(list).map(function (p) { return p.lon + "," + p.lat; }).join(";");
-    var url = OSRM + profile + "/table/v1/driving/" + coords + "?sources=0&annotations=distance,duration";
-    return fetch(url).then(function (r) { return r.json(); }).then(function (j) {
-      if (j.code !== "Ok") throw new Error(j.code);
-      return { d: j.distances[0].slice(1), t: j.durations[0].slice(1) };
-    });
+    var body = { sources: [{ lon: o.lon, lat: o.lat }], targets: list.map(function (s) { return { lon: s.lon, lat: s.lat }; }), costing: costing };
+    var ctl = new AbortController();
+    var timer = setTimeout(function () { ctl.abort(); }, 9000);
+    return fetch(VAL + "?json=" + enc(JSON.stringify(body)), { signal: ctl.signal })
+      .then(function (r) { return r.json(); })
+      .then(function (j) {
+        clearTimeout(timer);
+        var a = j.sources_to_targets[0];
+        return { d: a.map(function (v) { return v.distance == null ? null : v.distance * 1000; }), t: a.map(function (v) { return v.time == null ? null : v.time; }) };
+      }, function (e) { clearTimeout(timer); throw e; });
   }
   function calc() {
     var list = pool(), o = state.origin;
     if (!o) return;
     var out = $("out"); out.hidden = false;
-    $("sum").innerHTML = ""; $("rule").textContent = "";
-    $("list").innerHTML = '<div class="sk"></div><div class="sk"></div><div class="sk"></div>';
-    Promise.all([table("foot", list), table("car", list)]).then(function (r) {
-      finish(list, r[0], r[1], false);
-    }).catch(function () {
+    var tok = ++state.tok;
+    var af = { d: [], t: [] }, ac = { d: [], t: [] };
+    list.forEach(function (s) { var m = hav(o, s) * 1.3; af.d.push(m); af.t.push(m / 1.3); ac.d.push(m); ac.t.push(m / 7); });
+    finish(list, af, ac, "loading");
+    $("out").scrollIntoView({ behavior: "smooth", block: "start" });
+    var carP = retry(function () { return matrix("auto", list); }, 1).catch(function () { return null; });
+    var footP = retry(function () { return matrix("pedestrian", list); }, 1).catch(function () { return null; });
+    Promise.all([carP, footP]).then(function (r) {
+      if (tok !== state.tok) return;
+      var car = r[0], foot = r[1], miss = 0;
       var f = { d: [], t: [] }, c = { d: [], t: [] };
-      list.forEach(function (s) { var m = hav(o, s) * 1.3; f.d.push(m); f.t.push(m / 1.25); c.d.push(m); c.t.push(m / 8); });
-      finish(list, f, c, true);
+      list.forEach(function (s, i) {
+        if (foot && foot.t[i] != null) { f.d.push(foot.d[i]); f.t.push(foot.t[i]); } else { miss++; f.d.push(af.d[i]); f.t.push(af.t[i]); }
+        if (car && car.t[i] != null) { c.d.push(car.d[i]); c.t.push(car.t[i]); } else { miss++; c.d.push(ac.d[i]); c.t.push(ac.t[i]); }
+      });
+      finish(list, f, c, miss === list.length * 2 ? true : miss > 0 ? "part" : false);
+    });
+  }
+  function retry(fn, n) {
+    return fn().catch(function (e) {
+      if (n <= 0) throw e;
+      return new Promise(function (res) { setTimeout(res, 600); }).then(function () { return retry(fn, n - 1); });
     });
   }
   function finish(list, f, c, approx) {
     var o = state.origin;
     var rows = list.map(function (s, i) {
       var km = (f.d[i] || c.d[i] || 0) / 1000;
-      return { s: s, km: km, walk: Math.round((f.t[i] || 0) / 60), car: Math.max(2, Math.round((c.t[i] || 0) / 60 * 1.3)), far: hav(o, s) > 40000 };
+      return { s: s, km: km, walk: Math.round((f.t[i] || 0) / 60), car: Math.max(2, Math.round((c.t[i] || 0) / 60)), far: hav(o, s) > 40000 };
     }).sort(function (a, b) { return a.km - b.km; });
     state.calc = rows;
     render(rows, approx);
@@ -130,7 +148,7 @@
       var d = document.createElement("div"); d.innerHTML = "<small>" + x[0] + "</small><b>" + x[1] + "</b>"; sum.appendChild(d);
     });
     $("rule").innerHTML = "<b>" + (state.sex === "여" ? "여학생" : "남학생") + "은 " + r.total + "곳 중 " + r.pick + "곳 이상</b>을 적어내면 컴퓨터 추첨으로 배정됩니다. 가까운 학교가 꼭 배정되는 것은 아닙니다."
-      + (approx ? "<br><span style='color:var(--warn)'>길찾기 서비스에 연결하지 못해 직선거리로 어림한 값입니다.</span>" : "")
+      + (approx === "loading" ? "<br><span style='color:var(--brand)'>지금은 어림값입니다. 실제 길로 정확하게 계산하는 중이라 몇 초 뒤에 숫자가 바뀝니다.</span>" : approx === "part" ? "<br><span style='color:var(--warn)'>일부 학교는 길찾기 서비스에 연결하지 못해 직선거리로 어림한 값입니다.</span>" : approx ? "<br><span style='color:var(--warn)'>길찾기 서비스에 연결하지 못해 직선거리로 어림한 값입니다.</span>" : "")
       + (rows.some(function (x) { return x.far; }) ? "<br><span style='color:var(--warn)'>입력한 위치가 광주에서 멀리 떨어져 있습니다. 주소를 다시 확인해 주세요.</span>" : "");
     var list = $("list"); list.innerHTML = "";
     rows.forEach(function (x, i) {
@@ -154,7 +172,6 @@
         '<a href="https://map.kakao.com/link/map/' + to + '" target="_blank" rel="noopener">학교 위치</a></div></div>';
       list.appendChild(card);
     });
-    $("out").scrollIntoView({ behavior: "smooth", block: "start" });
   }
   function esc(t) { return String(t).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
 
