@@ -126,11 +126,13 @@
       return new Promise(function (res) { setTimeout(res, 600); }).then(function () { return retry(fn, n - 1); });
     });
   }
+  /* 대중교통은 실제 노선 자료가 없어 어림: 정류장 걷기·대기 10분 + 버스 시속 약 16km */
+  function transit(walk, km) { return Math.min(walk, Math.round(10 + km * 60 / 16)); }
   function finish(list, f, c, approx) {
     var o = state.origin;
     var rows = list.map(function (s, i) {
       var km = (f.d[i] || c.d[i] || 0) / 1000;
-      return { s: s, km: km, walk: Math.round((f.t[i] || 0) / 60), car: Math.max(2, Math.round((c.t[i] || 0) / 60)), far: hav(o, s) > 40000 };
+      return { s: s, km: km, walk: Math.round((f.t[i] || 0) / 60), car: Math.max(2, Math.round((c.t[i] || 0) / 60)), bus: transit(Math.round((f.t[i] || 0) / 60), (c.d[i] || f.d[i] || 0) / 1000), far: hav(o, s) > 40000 };
     }).sort(function (a, b) { return a.km - b.km; });
     state.calc = rows;
     render(rows, approx);
@@ -152,22 +154,18 @@
       + (rows.some(function (x) { return x.far; }) ? "<br><span style='color:var(--warn)'>입력한 위치가 광주에서 멀리 떨어져 있습니다. 주소를 다시 확인해 주세요.</span>" : "");
     var list = $("list"); list.innerHTML = "";
     rows.forEach(function (x, i) {
-      var s = x.s, p = pillOf(s), rv = s.rv;
+      var s = x.s, p = pillOf(s);
       var card = document.createElement("article"); card.className = "card";
       var to = enc(s.name) + "," + s.lat + "," + s.lon;
       var from = enc("우리집") + "," + o.lat + "," + o.lon;
-      var review = rv.p || rv.c ?
-        '<details class="rv"><summary>후기 보기 <span class="fine">' + esc(rv.s) + "</span></summary>" +
-        (rv.p ? '<span class="tag p">👍 ' + esc(rv.p) + "</span>" : "") + (rv.c ? '<span class="tag c">⚠ ' + esc(rv.c) + "</span>" : "") + "</details>"
-        : '<div class="fine">후기: ' + esc(rv.s) + "</div>";
       card.innerHTML =
         '<div class="ch"><div class="rk">' + (i + 1) + '</div><div class="ct"><h3>' + esc(s.name) + '<span class="pill ' + p[0] + '">' + p[1] + "</span></h3><p>" + esc(s.addr + (s.note ? " · " + s.note : "")) + "</p></div></div>" +
         '<div class="mets"><div class="met"><small>거리</small><b>' + x.km.toFixed(1) + "<i>km</i></b></div>" +
         '<div class="met"><small>도보</small><b class="' + wc(x.walk) + '">' + x.walk + "<i>분</i></b></div>" +
-        '<div class="met"><small>자가용</small><b>' + x.car + "<i>분</i></b></div></div>" +
+        '<div class="met"><small>자가용</small><b>' + x.car + "<i>분</i></b></div>" +
+        '<div class="met"><small>대중교통</small><b>' + x.bus + "<i>분</i></b></div></div>" +
         '<div class="body"><div class="jin"><div class="top"><span>4년제 진학률 (2025)</span><b>' + s.j.y4 + '%</b></div><div class="prog"><b style="width:' + s.j.y4 + '%"></b></div>' +
         '<div class="fine">졸업생 ' + s.j.g + "명 · 전체 진학 " + s.j.all + "% · " + s.j.gr + "등급 · 인서울은 공개 자료 없음</div></div>" +
-        review +
         '<div class="lnk"><a class="main" href="https://map.kakao.com/link/by/traffic/' + from + "/" + to + '" target="_blank" rel="noopener">대중교통 길찾기</a>' +
         '<a href="https://map.kakao.com/link/map/' + to + '" target="_blank" rel="noopener">학교 위치</a></div></div>';
       list.appendChild(card);
