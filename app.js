@@ -22,11 +22,13 @@
 
   /* ---------- 주소 검색 ---------- */
   function variants(q) {
-    var v = [q];
-    var noNum = q.replace(/\s+\d+(-\d+)?\s*(번지)?\s*$/, "");
-    if (noNum !== q) v.push(noNum);
-    if (!/광주/.test(q)) v.push("광주 " + q);
-    if (!/광주/.test(q) && noNum !== q) v.push("광주 " + noNum);
+    var s = q.replace(/광주광역시|전남광주통합특별시|광주시/g, "광주").replace(/\s+/g, " ").trim();
+    s = s.replace(/(로|길|대로)\s*(\d+(-\d+)?)\s*(번지|번)?$/, "$1 $2");
+    var noNum = s.replace(/\s+\d+(-\d+)?\s*(번지)?$/, "");
+    var noDong = s.split(" ").filter(function (t) { return !/^[가-힣0-9]+(동|읍|면)$/.test(t); }).join(" ");
+    var noDongNoNum = noDong.replace(/\s+\d+(-\d+)?\s*(번지)?$/, "");
+    function gj(x) { return /광주/.test(x) ? x : "광주 " + x; }
+    var v = [s, gj(s), noNum, gj(noNum), noDong, gj(noDong), gj(noDongNoNum)];
     return v.filter(function (x, i) { return x && v.indexOf(x) === i; });
   }
   function geocode(q) {
@@ -47,7 +49,7 @@
     msg(""); $("cands").innerHTML = ""; $("chosen").hidden = true;
     $("go").disabled = true; $("go").textContent = "찾는 중";
     geocode(q).then(function (a) {
-      if (!a.length) { msg("주소를 찾지 못했습니다. 도로명(예: 운암로 100)이나 동네 이름으로 다시 검색해 보세요. 또는 '현재 위치로 계산'을 눌러 보세요."); return; }
+      if (!a.length) { msg("주소를 찾지 못했습니다. 도로명 주소(예: 광주 북구 운암로 100)로 다시 검색해 보세요. 아파트 단지 이름만 넣어도 찾을 수 있습니다. 집에 계시면 '현재 위치로 계산'을 눌러 보세요."); return; }
       if (a.length === 1) { pick({ lat: +a[0].lat, lon: +a[0].lon, label: a[0].display_name }); return; }
       var box = $("cands");
       a.forEach(function (x) {
